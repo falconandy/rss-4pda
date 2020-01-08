@@ -25,6 +25,7 @@ const (
 	topicURLPattern = "http://4pda.ru/forum/index.php?showtopic=%d"
 	pageSize        = 20
 	maxPostCount    = 30
+	baseTimeZone    = 3
 )
 
 type PostDownloader struct {
@@ -255,12 +256,17 @@ func (d *PostDownloader) pageURL(topicID, from int) string {
 }
 
 func (d *PostDownloader) parseDate(dateStr string) (time.Time, bool) {
+	now := time.Now()
+	_, offset := now.Zone()
+	localTimeZone := offset / 3600
+	now = now.Add(time.Hour * time.Duration(baseTimeZone-localTimeZone))
+
 	dateStr = strings.ToLower(strings.TrimSpace(dateStr))
 	switch {
 	case strings.HasPrefix(dateStr, "сегодня, "):
-		dateStr = time.Now().Format("02.01.06") + strings.TrimPrefix(dateStr, "сегодня")
+		dateStr = now.Format("02.01.06") + strings.TrimPrefix(dateStr, "сегодня")
 	case strings.HasPrefix(dateStr, "вчера, "):
-		dateStr = time.Now().Add(-24*time.Hour).Format("02.01.06") + strings.TrimPrefix(dateStr, "вчера")
+		dateStr = now.Add(-24*time.Hour).Format("02.01.06") + strings.TrimPrefix(dateStr, "вчера")
 	}
 
 	if date, err := time.ParseInLocation("02.01.06, 15:04", dateStr, time.Local); err == nil {
